@@ -4,30 +4,27 @@ function collaborators#list()
 endfunction
 
 lua << END
-local compe = require'compe'
-local collaboratorSource = { }
+local cmp = require'cmp'
 
-local collabCache = vim.fn['collaborators#list']()
+local source = { }
 
-function collaboratorSource.get_metadata(_)
-  return {
-    priority = 100;
-    dup = false;
-    menu = '[Collab]';
-  }
+source.new = function()
+  local self = setmetatable({}, { __index = source })
+  self.collabCache = vim.fn['collaborators#list']()
+  return self
 end
 
-function collaboratorSource.determine(_, context)
-  return compe.helper.determine(context)
-end
-
-function collaboratorSource.complete(self, args)
+function source:complete(params, callback)
   if string.find(vim.fn.getline('.'), 'author') then
-    args.callback({ items = collabCache; })
+    local res = {}
+    for k,v in pairs(self.collabCache) do
+      res[k] = { label = v }
+    end
+    callback(res)
   else
-    args.callback({ items = { 'co-authored-by: ' }; })
+    callback({ { label = 'co-authored-by: ' } })
   end
 end
 
-compe.register_source('collaborators', collaboratorSource)
+cmp.register_source('collaborators', source.new())
 END
